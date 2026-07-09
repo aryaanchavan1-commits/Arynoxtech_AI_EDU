@@ -17,7 +17,9 @@ export async function POST(req: Request) {
     const amountMap: Record<string, number> = { basic: 299, plus: 599, premium: 999 };
     const amountInr = amountMap[tier];
 
-    // Create subscription record
+    const startsAt = new Date();
+    const endsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
     await db.insert(subscriptions).values({
       id: nanoid(),
       userId: user.id,
@@ -25,13 +27,13 @@ export async function POST(req: Request) {
       amountInr,
       status: "active",
       provider: "manual",
-      startsAt: new Date().toISOString(),
-      endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
     });
 
-    await db.update(users).set({ tier }).where(eq(users.id, user.id));
+    await db.update(users).set({ tier, subscriptionExpiresAt: endsAt.toISOString() }).where(eq(users.id, user.id));
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, tier, expiresAt: endsAt.toISOString() });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -9,6 +9,7 @@ export const users = sqliteTable("users", {
   avatarUrl: text("avatar_url"),
   role: text("role").notNull().default("user"),
   tier: text("tier").notNull().default("free_trial"),
+  subscriptionExpiresAt: text("subscription_expires_at"),
   oauthProvider: text("oauth_provider"),
   oauthId: text("oauth_id"),
   auth0UserId: text("auth0_user_id"),

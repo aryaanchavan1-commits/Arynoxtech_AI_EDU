@@ -1,12 +1,42 @@
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, and, gte } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { getDb } from "@/db";
-import { sessions, users, appSettings, type User } from "@/db/schema";
+import { sessions, users, subscriptions, appSettings, type User } from "@/db/schema";
 
 const SESSION_COOKIE = "arynox_session";
 const SESSION_DAYS = 30;
+const FREE_TIER: User["tier"] = "free_trial";
+
+export async function checkSubscription(userId: string): Promise<string> {
+  const _db = getDb();
+  if (!_db) return "free_trial";
+  try {
+    const active = await _db
+      .select()
+      .from(subscriptions)
+      .where(and(eq(subscriptions.userId, userId), eq(subscriptions.status, "active"), gte(subscriptions.endsAt, new Date().toISOString())))
+      .orderBy(subscriptions.endsAt)
+      .limit(1);
+    if (active.length > 0) {
+      return active[0].tier;
+    }
+  } catch {}
+  return "free_trial";
+}
+
+export async function enforceSubscription(userId: string, currentTier: string): Promise<string> {
+  if (currentTier === "free_trial" || currentTier === "admin") return currentTier;
+  const validTier = await checkSubscription(userId);
+  if (validTier !== currentTier) {
+    const _db = getDb();
+    if (_db) {
+      await _db.update(users).set({ tier: validTier, subscriptionExpiresAt: null }).where(eq(users.id, userId));
+    }
+  }
+  return validTier;
+}
 
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 10);
@@ -67,6 +97,12 @@ export async function getSessionUser(): Promise<User | null> {
   }
 
   await _db.update(users).set({ lastActiveAt: new Date().toISOString() }).where(eq(users.id, row.user.id));
+
+  if (row.user.role !== "admin") {
+    const validTier = await enforceSubscription(row.user.id, row.user.tier);
+    row.user.tier = validTier;
+  }
+
   return row.user;
 }
 
@@ -89,6 +125,7 @@ export function publicUser(user: User) {
     role: user.role, tier: user.tier, isBlocked: user.isBlocked,
     freeVideosUsed: user.freeVideosUsed, freeAiUsed: user.freeAiUsed,
     streak: user.streak, totalPoints: user.totalPoints,
+    subscriptionExpiresAt: user.subscriptionExpiresAt,
     lastActiveAt: user.lastActiveAt, createdAt: user.createdAt,
   };
 }
