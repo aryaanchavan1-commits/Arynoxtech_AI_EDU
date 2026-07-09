@@ -11,8 +11,32 @@ export async function POST(req: Request) {
   try {
     const user = await requireAdmin();
     const body = await req.json();
-    const { title, description, skillId, moduleId, tierRequired, mp4Url, uploadBunny } = body;
+    const { type, title, description, skillId, moduleId, tierRequired, mp4Url, uploadBunny } = body;
+    let bunnyVideoId: string | null = body.bunnyVideoId || null;
 
+    const id = nanoid();
+
+    // Create skill or module
+    if (type === "skills") {
+      if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
+      await db.insert(skills).values({
+        id, title, slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + id.slice(0, 4),
+        description: description || "", accentColor: "#7c3aed",
+        sortOrder: 0, status: "published",
+      });
+      return NextResponse.json({ success: true, id });
+    }
+
+    if (type === "modules") {
+      if (!title || !skillId) return NextResponse.json({ error: "Title and skill are required" }, { status: 400 });
+      await db.insert(modules).values({
+        id, title, slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + id.slice(0, 4),
+        description: description || "", skillId, sortOrder: 0, status: "published",
+      });
+      return NextResponse.json({ success: true, id });
+    }
+
+    // Create lecture
     if (!title || !skillId) return NextResponse.json({ error: "Title and skill are required" }, { status: 400 });
 
     const modResult = await detectVulgarContent(title + (description || ""));
@@ -20,11 +44,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Content contains inappropriate material" }, { status: 400 });
     }
 
-    const id = nanoid();
-    let bunnyVideoId: string | null = null;
     let hlsUrl: string | null = null;
 
-    if (uploadBunny) {
+    if (uploadBunny && bunnyVideoId) {
+      const settings = await db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
+      const host = settings[0]?.bunnyCdnHostname || `vz-${settings[0]?.bunnyLibraryId}.b-cdn.net`;
+      hlsUrl = `https://${host}/${bunnyVideoId}/playlist.m3u8`;
+    } else if (uploadBunny) {
       const settings = await db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
       if (settings[0]?.bunnyLibraryId && settings[0]?.bunnyApiKey) {
         const result = await createBunnyVideo({ libraryId: settings[0].bunnyLibraryId, apiKey: settings[0].bunnyApiKey, cdnHostname: settings[0].bunnyCdnHostname }, title);
@@ -39,7 +65,7 @@ export async function POST(req: Request) {
       id, title, slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + id.slice(0, 4),
       description: description || "", skillId, moduleId: moduleId || null,
       tierRequired: tierRequired || "free_trial", status: "published",
-      mp4Url: mp4Url || null, hlsUrl, bunnyVideoId,
+      mp4Url: mp4Url || null, hlsUrl, bunnyVideoId: bunnyVideoId || null,
       durationSeconds: 600, sortOrder: 0, viewCount: 0,
     });
 
