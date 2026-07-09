@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { skillMastery, moduleProgress, progress, lectures, modules, skills } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { nanoid } from "nanoid";
@@ -8,12 +8,14 @@ import { nanoid } from "nanoid";
 export async function GET(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const _db = getDb();
+  if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
   const { searchParams } = new URL(req.url);
   const skillId = searchParams.get("skillId");
   const reqUserId = searchParams.get("userId") || user.id;
 
-  const mastery = await db
+  const mastery = await _db
     .select({
       id: skillMastery.id, userId: skillMastery.userId, skillId: skillMastery.skillId,
       level: skillMastery.level, energyPoints: skillMastery.energyPoints,
@@ -28,7 +30,7 @@ export async function GET(req: Request) {
         : eq(skillMastery.userId, reqUserId)
     );
 
-  const modProg = await db
+  const modProg = await _db
     .select({
       id: moduleProgress.id, userId: moduleProgress.userId, moduleId: moduleProgress.moduleId,
       lecturesCompleted: moduleProgress.lecturesCompleted, totalLectures: moduleProgress.totalLectures,
@@ -44,33 +46,35 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const _db = getDb();
+  if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
   const { lectureId } = await req.json();
 
-  const lecture = await db.select().from(lectures).where(eq(lectures.id, lectureId)).limit(1);
+  const lecture = await _db.select().from(lectures).where(eq(lectures.id, lectureId)).limit(1);
   if (!lecture[0]) return NextResponse.json({ error: "Lecture not found" }, { status: 404 });
 
   const skillId = lecture[0].skillId;
   const moduleId = lecture[0].moduleId;
 
   // Check how many lectures completed in this skill
-  const completedCount = await db
+  const completedCount = await _db
     .select({ count: sql`count(*)` })
     .from(progress)
     .where(and(eq(progress.userId, user.id), eq(progress.completed, true), eq(progress.lectureId, lectureId)));
 
-  const totalSkillLectures = await db
+  const totalSkillLectures = await _db
     .select({ count: sql`count(*)` })
     .from(lectures)
     .where(and(eq(lectures.skillId, skillId), eq(lectures.status, "published")));
 
-  const lecturesCompleted = await db
+  const lecturesCompleted = await _db
     .select({ count: sql`count(*)` })
     .from(progress)
     .where(and(eq(progress.userId, user.id), eq(progress.completed, true)));
 
   // Upsert skill mastery
-  const existingMastery = await db.select().from(skillMastery).where(
+  const existingMastery = await _db.select().from(skillMastery).where(
     and(eq(skillMastery.userId, user.id), eq(skillMastery.skillId, skillId))
   ).limit(1);
 
@@ -81,13 +85,13 @@ export async function POST(req: Request) {
   else if (totalDone >= 5) level = "level_1";
 
   if (existingMastery[0]) {
-    await db.update(skillMastery).set({
+    await _db.update(skillMastery).set({
       lecturesCompleted: totalDone,
       level,
       updatedAt: new Date().toISOString(),
     }).where(eq(skillMastery.id, existingMastery[0].id));
   } else {
-    await db.insert(skillMastery).values({
+    await _db.insert(skillMastery).values({
       id: nanoid(), userId: user.id, skillId, level,
       energyPoints: 0, lecturesCompleted: totalDone, quizzesPassed: 0,
     });
@@ -95,12 +99,12 @@ export async function POST(req: Request) {
 
   // Upsert module progress
   if (moduleId) {
-    const totalModLectures = await db
+    const totalModLectures = await _db
       .select({ count: sql`count(*)` })
       .from(lectures)
       .where(and(eq(lectures.moduleId, moduleId), eq(lectures.status, "published")));
 
-    const modCompleted = await db
+    const modCompleted = await _db
       .select({ count: sql`count(*)` })
       .from(progress)
       .where(and(eq(progress.userId, user.id), eq(progress.completed, true), eq(progress.lectureId, lectureId)));
@@ -108,17 +112,17 @@ export async function POST(req: Request) {
     const totalMod = Number(totalModLectures[0]?.count || 0);
     const doneMod = Number(modCompleted[0]?.count || 0);
 
-    const existingModProg = await db.select().from(moduleProgress).where(
+    const existingModProg = await _db.select().from(moduleProgress).where(
       and(eq(moduleProgress.userId, user.id), eq(moduleProgress.moduleId, moduleId))
     ).limit(1);
 
     if (existingModProg[0]) {
-      await db.update(moduleProgress).set({
+      await _db.update(moduleProgress).set({
         lecturesCompleted: doneMod, totalLectures: totalMod,
         completed: doneMod >= totalMod, updatedAt: new Date().toISOString(),
       }).where(eq(moduleProgress.id, existingModProg[0].id));
     } else {
-      await db.insert(moduleProgress).values({
+      await _db.insert(moduleProgress).values({
         id: nanoid(), userId: user.id, moduleId,
         lecturesCompleted: doneMod, totalLectures: totalMod,
         completed: doneMod >= totalMod,
@@ -128,7 +132,7 @@ export async function POST(req: Request) {
 
   // Award energy points
   const energyPoints = totalDone * 10;
-  await db.update(skillMastery).set({ energyPoints }).where(
+  await _db.update(skillMastery).set({ energyPoints }).where(
     and(eq(skillMastery.userId, user.id), eq(skillMastery.skillId, skillId))
   );
 

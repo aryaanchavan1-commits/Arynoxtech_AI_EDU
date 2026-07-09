@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser, requireUser } from "@/lib/auth";
 import { getLectureDetail, searchLectures } from "@/lib/data";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { progress, watchlist, notes } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -29,9 +29,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const user = await requireUser();
   const body = await req.json();
+  const _db = getDb();
+  if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
   if (body.action === "progress") {
-    await db.insert(progress).values({ id: nanoid(), userId: user.id, lectureId: body.lectureId, positionSeconds: body.positionSeconds, durationSeconds: body.durationSeconds }).onConflictDoUpdate({
+    await _db.insert(progress).values({ id: nanoid(), userId: user.id, lectureId: body.lectureId, positionSeconds: body.positionSeconds, durationSeconds: body.durationSeconds }).onConflictDoUpdate({
       target: [progress.userId, progress.lectureId],
       set: { positionSeconds: body.positionSeconds, durationSeconds: body.durationSeconds, completed: body.completed || false, lastWatchedAt: new Date().toISOString() },
     });
@@ -39,14 +41,14 @@ export async function POST(req: Request) {
 
   if (body.action === "watchlist") {
     if (body.add) {
-      await db.insert(watchlist).values({ id: nanoid(), userId: user.id, lectureId: body.lectureId }).onConflictDoNothing();
+      await _db.insert(watchlist).values({ id: nanoid(), userId: user.id, lectureId: body.lectureId }).onConflictDoNothing();
     } else {
-      await db.delete(watchlist).where(and(eq(watchlist.userId, user.id), eq(watchlist.lectureId, body.lectureId)));
+      await _db.delete(watchlist).where(and(eq(watchlist.userId, user.id), eq(watchlist.lectureId, body.lectureId)));
     }
   }
 
   if (body.action === "note") {
-    await db.insert(notes).values({ id: nanoid(), userId: user.id, lectureId: body.lectureId, content: body.content }).onConflictDoUpdate({
+    await _db.insert(notes).values({ id: nanoid(), userId: user.id, lectureId: body.lectureId, content: body.content }).onConflictDoUpdate({
       target: [notes.userId, notes.lectureId],
       set: { content: body.content, canvasData: body.canvasData, updatedAt: new Date().toISOString() },
     });

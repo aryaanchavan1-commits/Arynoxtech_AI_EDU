@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { appSettings } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { createBunnyVideo } from "@/lib/bunny";
@@ -8,10 +8,12 @@ import { createBunnyVideo } from "@/lib/bunny";
 export async function POST(req: Request) {
   try {
     await requireAdmin();
+    const _db = getDb();
+    if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
     const { title } = await req.json();
     if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
-    const settings = await db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
+    const settings = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
     const s = settings[0];
     if (!s?.bunnyLibraryId || !s?.bunnyApiKey) {
       return NextResponse.json({ error: "Bunny.net not configured. Go to Settings and add Library ID + API Key." }, { status: 400 });

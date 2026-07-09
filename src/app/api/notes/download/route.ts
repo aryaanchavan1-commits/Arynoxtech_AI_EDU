@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { lectures, notes } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { callGroq } from "@/lib/ai";
@@ -12,7 +12,9 @@ export async function POST(req: Request) {
   const { lectureId } = await req.json();
   if (!lectureId) return NextResponse.json({ error: "lectureId required" }, { status: 400 });
 
-  const lecture = await db.select().from(lectures).where(eq(lectures.id, lectureId)).limit(1);
+  const _db = getDb();
+  if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+  const lecture = await _db.select().from(lectures).where(eq(lectures.id, lectureId)).limit(1);
   if (!lecture[0]) return NextResponse.json({ error: "Lecture not found" }, { status: 404 });
 
   const transcript = lecture[0].transcript || "";

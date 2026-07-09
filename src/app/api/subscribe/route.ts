@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { subscriptions, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
     const user = await requireUser();
+    const _db = getDb();
+    if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
     const { tier } = await req.json();
 
     if (!["basic", "plus", "premium"].includes(tier)) {
@@ -20,7 +22,7 @@ export async function POST(req: Request) {
     const startsAt = new Date();
     const endsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    await db.insert(subscriptions).values({
+    await _db.insert(subscriptions).values({
       id: nanoid(),
       userId: user.id,
       tier,
@@ -31,7 +33,7 @@ export async function POST(req: Request) {
       endsAt: endsAt.toISOString(),
     });
 
-    await db.update(users).set({ tier, subscriptionExpiresAt: endsAt.toISOString() }).where(eq(users.id, user.id));
+    await _db.update(users).set({ tier, subscriptionExpiresAt: endsAt.toISOString() }).where(eq(users.id, user.id));
 
     return NextResponse.json({ success: true, tier, expiresAt: endsAt.toISOString() });
   } catch (err: any) {

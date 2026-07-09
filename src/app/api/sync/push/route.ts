@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { progress, notes } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -10,10 +10,12 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
+  const _db = getDb();
+  if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
   if (body.progress) {
     for (const p of body.progress) {
-      await db.insert(progress).values({
+      await _db.insert(progress).values({
         id: nanoid(), userId: user.id, lectureId: p.lectureId,
         positionSeconds: p.positionSeconds || 0, durationSeconds: p.durationSeconds || 0, completed: p.completed || false,
       }).onConflictDoUpdate({
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
 
   if (body.notes) {
     for (const n of body.notes) {
-      await db.insert(notes).values({
+      await _db.insert(notes).values({
         id: nanoid(), userId: user.id, lectureId: n.lectureId,
         content: n.content || "", canvasData: n.canvasData || null,
       }).onConflictDoUpdate({

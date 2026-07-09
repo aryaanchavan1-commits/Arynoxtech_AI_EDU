@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { users, progress, quizzes, quizAttempts, skillMastery, moduleProgress, lectures, skills, modules, achievements } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 
 export async function GET() {
   try {
     await requireAdmin();
+    const _db = getDb();
+    if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
-    const allUsers = await db.select({
+    const allUsers = await _db.select({
       id: users.id, name: users.name, email: users.email, tier: users.tier,
       streak: users.streak, totalPoints: users.totalPoints, isBlocked: users.isBlocked,
       createdAt: users.createdAt,
@@ -16,15 +18,15 @@ export async function GET() {
 
     const result: any[] = [];
     for (const u of allUsers) {
-      const pCount = await db.select({ count: sql`count(*)` }).from(progress).where(
+      const pCount = await _db.select({ count: sql`count(*)` }).from(progress).where(
         and(eq(progress.userId, u.id), eq(progress.completed, true))
       );
-      const qCount = await db.select({ count: sql`count(*)` }).from(quizAttempts).where(
+      const qCount = await _db.select({ count: sql`count(*)` }).from(quizAttempts).where(
         and(eq(quizAttempts.userId, u.id), eq(quizAttempts.correct, true))
       );
-      const mastery = await db.select().from(skillMastery).where(eq(skillMastery.userId, u.id));
-      const modProg = await db.select().from(moduleProgress).where(eq(moduleProgress.userId, u.id));
-      const ach = await db.select().from(achievements).where(eq(achievements.userId, u.id));
+      const mastery = await _db.select().from(skillMastery).where(eq(skillMastery.userId, u.id));
+      const modProg = await _db.select().from(moduleProgress).where(eq(moduleProgress.userId, u.id));
+      const ach = await _db.select().from(achievements).where(eq(achievements.userId, u.id));
 
       result.push({
         ...u,

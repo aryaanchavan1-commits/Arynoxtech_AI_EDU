@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { appSettings } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth";
 import { invalidateSettingsCache } from "@/lib/ai";
@@ -18,7 +18,9 @@ const SETTING_FIELDS = [
 export async function GET() {
   try {
     await requireAdmin();
-    const rows = await db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
+    const _db = getDb();
+    if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+    const rows = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
     const s = rows[0] || {};
 
     const result: Record<string, string> = {};
@@ -35,6 +37,8 @@ export async function GET() {
 export async function PUT(req: Request) {
   try {
     await requireAdmin();
+    const _db = getDb();
+    if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
     const body = await req.json();
     const updates: Record<string, any> = {};
 
@@ -48,11 +52,11 @@ export async function PUT(req: Request) {
     updates.updatedAt = new Date().toISOString();
 
     // Upsert the global settings row
-    const existing = await db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
+    const existing = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
     if (existing[0]) {
-      await db.update(appSettings).set(updates).where(eq(appSettings.id, "global"));
+      await _db.update(appSettings).set(updates).where(eq(appSettings.id, "global"));
     } else {
-      await db.insert(appSettings).values({ id: "global", ...updates });
+      await _db.insert(appSettings).values({ id: "global", ...updates });
     }
 
     // Invalidate cache so next request picks up the changes immediately

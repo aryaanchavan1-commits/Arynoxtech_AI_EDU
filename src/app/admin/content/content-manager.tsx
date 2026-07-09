@@ -1,15 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { nanoid } from "nanoid";
+
+type TabType = "skills" | "modules" | "lectures";
 
 export function ContentManager({ data }: { data: { skills: any[]; modules: any[]; lectures: any[] } }) {
-  const [activeTab, setActiveTab] = useState<"skills" | "modules" | "lectures">("skills");
-  const [items, setItems] = useState(data.skills);
+  const [activeTab, setActiveTab] = useState<TabType>("skills");
+  const [items, setItems] = useState<any[]>(data.skills);
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newSkillId, setNewSkillId] = useState(data.skills[0]?.id || "");
   const [message, setMessage] = useState("");
+
+  const tabData: Record<TabType, any[]> = {
+    skills: data.skills, modules: data.modules, lectures: data.lectures,
+  };
+
+  const switchTab = (tab: TabType) => {
+    setActiveTab(tab);
+    setItems(tabData[tab] || []);
+    setShowForm(false);
+  };
 
   const handleDelete = async (type: string, id: string) => {
     if (!confirm("Delete this item?")) return;
@@ -46,15 +57,13 @@ export function ContentManager({ data }: { data: { skills: any[]; modules: any[]
     }
   };
 
-  const tabData: Record<string, any[]> = { skills: data.skills, modules: data.modules, lectures: data.lectures };
-
   return (
     <div>
       <div className="flex gap-2 mb-6">
-        {["skills", "modules", "lectures"].map((tab) => (
+        {(["skills", "modules", "lectures"] as TabType[]).map((tab) => (
           <button
             key={tab}
-            onClick={() => { setActiveTab(tab as any); setItems(tabData[tab] || []); setShowForm(false); }}
+            onClick={() => switchTab(tab)}
             className={`text-sm px-4 py-2 rounded-lg transition ${activeTab === tab ? "bg-violet-600/30 text-violet-300 border border-violet-500/30" : "text-zinc-400 hover:text-white"}`}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)} ({tabData[tab]?.length || 0})
@@ -82,7 +91,9 @@ export function ContentManager({ data }: { data: { skills: any[]; modules: any[]
               </select>
             </div>
           )}
-          {message && <p className="text-xs text-green-400">{message}</p>}
+          {message && (
+            <p className={`text-xs ${message.includes("created") ? "text-green-400" : "text-red-400"}`}>{message}</p>
+          )}
           <button type="submit" className="btn-primary text-sm">Create</button>
         </form>
       )}

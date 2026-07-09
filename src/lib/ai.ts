@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { appSettings } from "@/db/schema";
 
 let cachedSettings: Record<string, string> | null = null;
@@ -8,8 +8,10 @@ const CACHE_TTL = 10_000;
 
 async function loadSettings() {
   if (cachedSettings && Date.now() - cacheTime < CACHE_TTL) return cachedSettings;
+  const _db = getDb();
+  if (!_db) return cachedSettings!;
   try {
-    const rows = await db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
+    const rows = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
     const s = rows[0] || {};
     cachedSettings = {
       groqApiKey: s.groqApiKey || process.env.GROQ_API_KEY || "",

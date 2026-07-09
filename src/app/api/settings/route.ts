@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { appSettings } from "@/db/schema";
 
 export async function GET() {
-  const rows = await db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
+  const _db = getDb();
+  if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+  const rows = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
   const s = rows[0] || {};
 
   return NextResponse.json({

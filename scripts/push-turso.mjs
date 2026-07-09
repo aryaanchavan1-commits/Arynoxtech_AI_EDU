@@ -14,7 +14,8 @@ async function main() {
     `CREATE TABLE IF NOT EXISTS users (
       id text PRIMARY KEY, email text NOT NULL UNIQUE, name text NOT NULL,
       password_hash text, avatar_url text, role text NOT NULL DEFAULT 'user',
-      tier text NOT NULL DEFAULT 'free_trial', oauth_provider text, oauth_id text,
+      tier text NOT NULL DEFAULT 'free_trial', subscription_expires_at text,
+      oauth_provider text, oauth_id text,
       auth0_user_id text, free_videos_used integer NOT NULL DEFAULT 0,
       free_ai_used integer NOT NULL DEFAULT 0, is_blocked integer NOT NULL DEFAULT 0,
       blocked_reason text, streak integer NOT NULL DEFAULT 0, total_points integer NOT NULL DEFAULT 0,
