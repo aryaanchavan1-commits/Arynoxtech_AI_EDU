@@ -348,6 +348,36 @@ export const batchEnrollments = sqliteTable("batch_enrollments", {
   status: text("status").notNull().default("active"),
 }, (t) => [uniqueIndex("be_batch_user_idx").on(t.batchId, t.userId)]);
 
+export const quizAttempts = sqliteTable("quiz_attempts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  quizId: text("quiz_id").notNull().references(() => quizzes.id, { onDelete: "cascade" }),
+  selectedIndex: integer("selected_index").notNull(),
+  correct: integer("correct", { mode: "boolean" }).notNull(),
+  attemptedAt: text("attempted_at").notNull().default("(datetime('now'))"),
+}, (t) => [index("qa_user_idx").on(t.userId), index("qa_quiz_idx").on(t.quizId)]);
+
+export const skillMastery = sqliteTable("skill_mastery", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  skillId: text("skill_id").notNull().references(() => skills.id, { onDelete: "cascade" }),
+  level: text("level").notNull().default("practiced"),
+  energyPoints: integer("energy_points").notNull().default(0),
+  lecturesCompleted: integer("lectures_completed").notNull().default(0),
+  quizzesPassed: integer("quizzes_passed").notNull().default(0),
+  updatedAt: text("updated_at").notNull().default("(datetime('now'))"),
+}, (t) => [uniqueIndex("sm_user_skill_idx").on(t.userId, t.skillId)]);
+
+export const moduleProgress = sqliteTable("module_progress", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  moduleId: text("module_id").notNull().references(() => modules.id, { onDelete: "cascade" }),
+  lecturesCompleted: integer("lectures_completed").notNull().default(0),
+  totalLectures: integer("total_lectures").notNull().default(0),
+  completed: integer("completed", { mode: "boolean" }).notNull().default(false),
+  updatedAt: text("updated_at").notNull().default("(datetime('now'))"),
+}, (t) => [uniqueIndex("mp_user_module_idx").on(t.userId, t.moduleId)]);
+
 export const parentReports = sqliteTable("parent_reports", {
   id: text("id").primaryKey(),
   parentId: text("parent_id").notNull().references(() => users.id, { onDelete: "cascade" }),

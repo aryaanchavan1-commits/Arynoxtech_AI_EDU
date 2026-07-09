@@ -201,6 +201,27 @@ async function main() {
       period_start text, period_end text, report_json text,
       created_at text NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS quiz_attempts (
+      id text PRIMARY KEY, user_id text NOT NULL, quiz_id text NOT NULL,
+      selected_index integer NOT NULL, correct integer NOT NULL DEFAULT 0,
+      attempted_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE INDEX IF NOT EXISTS qa_user_idx ON quiz_attempts(user_id)`,
+    `CREATE INDEX IF NOT EXISTS qa_quiz_idx ON quiz_attempts(quiz_id)`,
+    `CREATE TABLE IF NOT EXISTS skill_mastery (
+      id text PRIMARY KEY, user_id text NOT NULL, skill_id text NOT NULL,
+      level text NOT NULL DEFAULT 'practiced', energy_points integer NOT NULL DEFAULT 0,
+      lectures_completed integer NOT NULL DEFAULT 0, quizzes_passed integer NOT NULL DEFAULT 0,
+      updated_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS sm_user_skill_idx ON skill_mastery(user_id, skill_id)`,
+    `CREATE TABLE IF NOT EXISTS module_progress (
+      id text PRIMARY KEY, user_id text NOT NULL, module_id text NOT NULL,
+      lectures_completed integer NOT NULL DEFAULT 0, total_lectures integer NOT NULL DEFAULT 0,
+      completed integer NOT NULL DEFAULT 0,
+      updated_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS mp_user_module_idx ON module_progress(user_id, module_id)`,
   ];
 
   for (const sql of tables) {

@@ -46,6 +46,7 @@ export function Navbar({ user }: { user: Partial<User> | null }) {
           <Link href="/browse" className="text-zinc-300 hover:text-white transition">Browse</Link>
           <Link href="/pricing" className="text-zinc-300 hover:text-white transition">Plans</Link>
           {user && <Link href="/my-list" className="text-zinc-300 hover:text-white transition">My List</Link>}
+          {user && <Link href="/progress" className="text-zinc-300 hover:text-white transition">Progress</Link>}
           {user && <Link href="/leaderboard" className="text-zinc-300 hover:text-white transition">Leaderboard</Link>}
           {user && <Link href="/challenges" className="text-zinc-300 hover:text-white transition">Challenges</Link>}
           {user && <Link href="/batch" className="text-zinc-300 hover:text-white transition">Live Classes</Link>}
