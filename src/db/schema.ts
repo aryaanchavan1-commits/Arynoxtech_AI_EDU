@@ -286,6 +286,78 @@ export const achievements = sqliteTable("achievements", {
   unlockedAt: text("unlocked_at").notNull().default("(datetime('now'))"),
 }, (t) => [index("achievements_user_idx").on(t.userId)]);
 
+export const parentChildLinks = sqliteTable("parent_child_links", {
+  id: text("id").primaryKey(),
+  parentId: text("parent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  childId: text("child_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  relationship: text("relationship"),
+  createdAt: text("created_at").notNull().default("(datetime('now'))"),
+}, (t) => [index("pcl_parent_idx").on(t.parentId), index("pcl_child_idx").on(t.childId)]);
+
+export const dailyChallenges = sqliteTable("daily_challenges", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull(),
+  target: integer("target").notNull().default(1),
+  pointsReward: integer("points_reward").notNull().default(100),
+  expiresAt: text("expires_at"),
+  createdAt: text("created_at").notNull().default("(datetime('now'))"),
+});
+
+export const userChallenges = sqliteTable("user_challenges", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  challengeId: text("challenge_id").notNull().references(() => dailyChallenges.id, { onDelete: "cascade" }),
+  progress: integer("progress").notNull().default(0),
+  completed: integer("completed", { mode: "boolean" }).notNull().default(false),
+  completedAt: text("completed_at"),
+  createdAt: text("created_at").notNull().default("(datetime('now'))"),
+}, (t) => [uniqueIndex("uc_user_challenge_idx").on(t.userId, t.challengeId)]);
+
+export const videoDownloads = sqliteTable("video_downloads", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  lectureId: text("lecture_id").notNull().references(() => lectures.id, { onDelete: "cascade" }),
+  downloadedAt: text("downloaded_at").notNull().default("(datetime('now'))"),
+  fileSize: integer("file_size"),
+  expiresAt: text("expires_at"),
+}, (t) => [uniqueIndex("vd_user_lecture_idx").on(t.userId, t.lectureId)]);
+
+export const batchClasses = sqliteTable("batch_classes", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  instructorId: text("instructor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  skillId: text("skill_id").references(() => skills.id, { onDelete: "set null" }),
+  maxStudents: integer("max_students").notNull().default(50),
+  price: integer("price").notNull().default(0),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  scheduleJson: text("schedule_json"),
+  status: text("status").notNull().default("active"),
+  createdAt: text("created_at").notNull().default("(datetime('now'))"),
+  updatedAt: text("updated_at").notNull().default("(datetime('now'))"),
+}, (t) => [index("batch_classes_skill_idx").on(t.skillId), index("batch_classes_instructor_idx").on(t.instructorId)]);
+
+export const batchEnrollments = sqliteTable("batch_enrollments", {
+  id: text("id").primaryKey(),
+  batchId: text("batch_id").notNull().references(() => batchClasses.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  enrolledAt: text("enrolled_at").notNull().default("(datetime('now'))"),
+  status: text("status").notNull().default("active"),
+}, (t) => [uniqueIndex("be_batch_user_idx").on(t.batchId, t.userId)]);
+
+export const parentReports = sqliteTable("parent_reports", {
+  id: text("id").primaryKey(),
+  parentId: text("parent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  childId: text("child_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  periodStart: text("period_start"),
+  periodEnd: text("period_end"),
+  reportJson: text("report_json"),
+  createdAt: text("created_at").notNull().default("(datetime('now'))"),
+}, (t) => [index("pr_parent_idx").on(t.parentId), index("pr_child_idx").on(t.childId)]);
+
 export const usersRelations = relations(users, ({ many }) => ({
   progress: many(progress), watchlist: many(watchlist), notes: many(notes), subscriptions: many(subscriptions), payments: many(payments),
 }));

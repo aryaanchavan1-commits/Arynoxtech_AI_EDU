@@ -159,6 +159,48 @@ async function main() {
       title text NOT NULL, description text, icon text,
       unlocked_at text NOT NULL DEFAULT (datetime('now'))
     )`,
+  `CREATE TABLE IF NOT EXISTS parent_child_links (
+      id text PRIMARY KEY, parent_id text NOT NULL, child_id text NOT NULL,
+      relationship text, created_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS daily_challenges (
+      id text PRIMARY KEY, title text NOT NULL, description text,
+      type text NOT NULL, target integer NOT NULL DEFAULT 1,
+      points_reward integer NOT NULL DEFAULT 100, expires_at text,
+      created_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS user_challenges (
+      id text PRIMARY KEY, user_id text NOT NULL, challenge_id text NOT NULL,
+      progress integer NOT NULL DEFAULT 0, completed integer NOT NULL DEFAULT 0,
+      completed_at text, created_at text NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, challenge_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS video_downloads (
+      id text PRIMARY KEY, user_id text NOT NULL, lecture_id text NOT NULL,
+      downloaded_at text NOT NULL DEFAULT (datetime('now')),
+      file_size integer, expires_at text,
+      UNIQUE(user_id, lecture_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS batch_classes (
+      id text PRIMARY KEY, title text NOT NULL, description text,
+      instructor_id text NOT NULL, skill_id text,
+      max_students integer NOT NULL DEFAULT 50, price integer NOT NULL DEFAULT 0,
+      start_date text, end_date text, schedule_json text,
+      status text NOT NULL DEFAULT 'active',
+      created_at text NOT NULL DEFAULT (datetime('now')),
+      updated_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS batch_enrollments (
+      id text PRIMARY KEY, batch_id text NOT NULL, user_id text NOT NULL,
+      enrolled_at text NOT NULL DEFAULT (datetime('now')),
+      status text NOT NULL DEFAULT 'active',
+      UNIQUE(batch_id, user_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS parent_reports (
+      id text PRIMARY KEY, parent_id text NOT NULL, child_id text NOT NULL,
+      period_start text, period_end text, report_json text,
+      created_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
   ];
 
   for (const sql of tables) {
