@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   try {
     const user = await requireAdmin();
     const body = await req.json();
-    const { type, title, description, skillId, moduleId, tierRequired, mp4Url, uploadBunny } = body;
+    const { type, title, description, skillId, moduleId, tierRequired, mp4Url, uploadBunny, eNotes } = body;
     let bunnyVideoId: string | null = body.bunnyVideoId || null;
 
     const id = nanoid();
@@ -67,6 +67,7 @@ export async function POST(req: Request) {
       tierRequired: tierRequired || "free_trial", status: "published",
       mp4Url: mp4Url || null, hlsUrl, bunnyVideoId: bunnyVideoId || null,
       durationSeconds: 600, sortOrder: 0, viewCount: 0,
+      contentText: eNotes || null,
     });
 
     return NextResponse.json({ success: true, id });

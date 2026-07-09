@@ -14,6 +14,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [eNotes, setENotes] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filteredModules = modules.filter((m: any) => m.skillId === skillId);
@@ -29,7 +30,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
         const res = await fetch("/api/admin/content", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, description, skillId, moduleId: moduleId || null, tierRequired, mp4Url }),
+          body: JSON.stringify({ title, description, skillId, moduleId: moduleId || null, tierRequired, mp4Url, eNotes }),
         });
         const data = await res.json();
         if (res.ok) {
@@ -86,7 +87,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title, description, skillId, moduleId: moduleId || null, tierRequired,
-          uploadBunny: true, bunnyVideoId: createData.videoId,
+          uploadBunny: true, bunnyVideoId: createData.videoId, eNotes,
         }),
       });
       const saveData = await saveRes.json();
@@ -139,6 +140,11 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
           <option value="plus">Plus</option>
           <option value="premium">Premium</option>
         </select>
+      </div>
+
+      <div>
+        <label className="text-xs text-zinc-400 mb-1 block">📄 E-Notes for Students (optional)</label>
+        <textarea value={eNotes} onChange={(e) => setENotes(e.target.value)} className="input-field" rows={4} placeholder="Markdown supported... Provide study notes that students can download as PDF" />
       </div>
 
       <div className="flex gap-4 border-b border-zinc-700 pb-3">
