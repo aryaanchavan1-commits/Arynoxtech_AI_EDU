@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>ArynoxEDULauncher</RootNamespace>
+    <AssemblyName>Arynox-EDU-Launcher</AssemblyName>
+    <ApplicationIcon>icons\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Description>Arynox-EDU Application Launcher</Description>
+    <Product>Arynox-EDU</Product>
+    <Company>Arynoxtech</Company>
+    <Copyright>2026 Arynoxtech</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+  </ItemGroup>
+</Project>

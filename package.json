@@ -1,0 +1,65 @@
+{
+  "name": "arynox-edu",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Arynox-EDU - Next-gen e-learning platform with AI, live classes, subscriptions",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "electron": "electron .",
+    "electron-build": "electron-builder",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "db:push": "drizzle-kit push --config drizzle.config.mjs"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.4",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.45.2",
+    "electron-store": "^10.0.1",
+    "lucide-react": "^1.23.0",
+    "nanoid": "^5.1.16",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.17",
+    "@types/node": "22.19.15",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "postcss": "8.5.8",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3"
+  },
+  "build": {
+    "appId": "com.arynoxtech.edu",
+    "productName": "Arynox-EDU",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      ".next/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
