@@ -47,18 +47,25 @@ export async function POST(req: Request) {
     }
 
     let hlsUrl: string | null = null;
+    let thumbnailUrl: string | null = null;
 
     if (uploadBunny && bunnyVideoId) {
+      // Bunny video already created by /api/admin/bunny/create — just build URLs
       const settings = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
-      const host = settings[0]?.bunnyCdnHostname || `vz-${settings[0]?.bunnyLibraryId}.b-cdn.net`;
+      const host = settings[0]?.bunnyCdnHostname || process.env.BUNNY_CDN_HOSTNAME || `vz-${settings[0]?.bunnyLibraryId || process.env.BUNNY_LIBRARY_ID}.b-cdn.net`;
       hlsUrl = `https://${host}/${bunnyVideoId}/playlist.m3u8`;
+      thumbnailUrl = `https://${host}/${bunnyVideoId}/thumbnail.jpg`;
     } else if (uploadBunny) {
       const settings = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
-      if (settings[0]?.bunnyLibraryId && settings[0]?.bunnyApiKey) {
-        const result = await createBunnyVideo({ libraryId: settings[0].bunnyLibraryId, apiKey: settings[0].bunnyApiKey, cdnHostname: settings[0].bunnyCdnHostname }, title);
+      const libId = settings[0]?.bunnyLibraryId || process.env.BUNNY_LIBRARY_ID || "";
+      const apiKey = settings[0]?.bunnyApiKey || process.env.BUNNY_API_KEY || "";
+      const cdnHost = settings[0]?.bunnyCdnHostname || process.env.BUNNY_CDN_HOSTNAME || "";
+      if (libId && apiKey) {
+        const result = await createBunnyVideo({ libraryId: libId, apiKey, cdnHostname: cdnHost }, title);
         if ("videoId" in result) {
           bunnyVideoId = result.videoId;
           hlsUrl = result.hlsUrl;
+          thumbnailUrl = `https://${cdnHost || `vz-${libId}.b-cdn.net`}/${result.videoId}/thumbnail.jpg`;
         }
       }
     }
@@ -68,7 +75,9 @@ export async function POST(req: Request) {
       description: description || "", skillId, moduleId: moduleId || null,
       tierRequired: tierRequired || "free_trial", status: "published",
       mp4Url: mp4Url || null, hlsUrl, bunnyVideoId: bunnyVideoId || null,
+      thumbnailUrl: thumbnailUrl || body.thumbnailUrl || null,
       durationSeconds: 600, sortOrder: 0, viewCount: 0,
+      isNewRelease: true, isRecommended: false,
       contentText: eNotes || null,
     });
 

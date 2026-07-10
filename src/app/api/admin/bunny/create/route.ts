@@ -43,6 +43,7 @@ export async function POST(req: Request) {
       accessKey: config.apiKey,
       hlsUrl: result.hlsUrl,
       embedUrl: result.embedUrl,
+      thumbnailUrl: `https://${config.cdnHostname || `vz-${config.libraryId}.b-cdn.net`}/${result.videoId}/thumbnail.jpg`,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to create Bunny video" }, { status: 500 });
