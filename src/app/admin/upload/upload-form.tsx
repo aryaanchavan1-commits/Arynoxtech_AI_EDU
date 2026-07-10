@@ -84,13 +84,11 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
       setUploadProgress(85);
 
       // Wait for Bunny to start processing (poll status)
-      let statusChecked = false;
       for (let i = 0; i < 6; i++) {
         try {
           const statusRes = await fetch(`/api/admin/bunny/status?v=${createData.videoId}`);
           const statusData = await statusRes.json();
           if (statusData.status === "processing" || statusData.status === "finished" || statusData.enabled) {
-            statusChecked = true;
             break;
           }
         } catch {}
