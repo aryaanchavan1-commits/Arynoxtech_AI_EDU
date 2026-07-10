@@ -2,11 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Navbar } from "@/components/Navbar";
-import { VideoPlayer } from "@/components/VideoPlayer";
-import { FlashcardDeck, QuizPanel, AiTutorDrawer } from "@/components/AiTutorDrawer";
 import { useSession } from "@/lib/client-session";
 import jsPDF from "jspdf";
+
+const VideoPlayer = dynamic(() => import("@/components/VideoPlayer").then((m) => m.VideoPlayer), { ssr: false });
+const AiTutorDrawer = dynamic(() => import("@/components/AiTutorDrawer").then((m) => m.AiTutorDrawer), { ssr: false });
+const FlashcardDeck = dynamic(() => import("@/components/AiTutorDrawer").then((m) => m.FlashcardDeck), { ssr: false });
+const QuizPanel = dynamic(() => import("@/components/AiTutorDrawer").then((m) => m.QuizPanel), { ssr: false });
 
 const LEVEL_BADGES: Record<string, string> = { practiced: "🌱", level_1: "🔥", level_2: "⭐", mastered: "🏆" };
 const LEVEL_LABELS: Record<string, string> = { practiced: "Practiced", level_1: "Level 1", level_2: "Level 2", mastered: "Mastered" };
@@ -425,7 +429,7 @@ export default function WatchPage() {
               {related.map((r: any) => (
                 <a key={r.id} href={`/watch/${r.id}`} className="card-hover">
                 <div className="rounded-lg overflow-hidden bg-zinc-900 aspect-video">
-                  <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" />
+                  <img src={r.thumbnailUrl} alt={r.title} className="w-full h-full object-cover" loading="lazy" />
                 </div>
                 <p className="text-xs text-zinc-300 mt-1.5 truncate">{r.title}</p>
               </a>

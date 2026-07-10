@@ -167,7 +167,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
         <input value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} className="input-field" placeholder="https://images.unsplash.com/... or auto-populated from Bunny.net" />
         {thumbnailUrl && (
           <div className="mt-2 rounded-lg overflow-hidden w-32 h-18">
-            <img src={thumbnailUrl} alt="thumbnail preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+            <img src={thumbnailUrl} alt="thumbnail preview" className="w-full h-full object-cover" loading="lazy" onError={(e) => (e.currentTarget.style.display = "none")} />
           </div>
         )}
       </div>

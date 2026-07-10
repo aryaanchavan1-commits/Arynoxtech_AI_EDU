@@ -19,7 +19,10 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/login?error=auth0_not_configured", req.url));
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+  // Auto-detect the public URL from the request (handles Vercel, localhost, etc.)
+  const host = req.headers.get("host") || "localhost:3000";
+  const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const baseUrl = `${proto}://${host}`;
   const redirectUri = `${baseUrl}/api/auth/callback`;
 
   try {

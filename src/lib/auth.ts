@@ -64,21 +64,17 @@ export async function createSession(userId: string) {
   return id;
 }
 
-export async function destroySession() {
+export async function destroySession(token?: string) {
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (token) {
+  const t = token || cookieStore.get(SESSION_COOKIE)?.value;
+  if (t) {
     const _db = getDb();
-    if (_db) await _db.delete(sessions).where(eq(sessions.id, token));
+    if (_db) await _db.delete(sessions).where(eq(sessions.id, t));
     cookieStore.delete(SESSION_COOKIE);
   }
 }
 
-export async function getSessionUser(): Promise<User | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-
+async function getSessionByToken(token: string) {
   const _db = getDb();
   if (!_db) return null;
 
@@ -95,26 +91,52 @@ export async function getSessionUser(): Promise<User | null> {
     await _db.delete(sessions).where(eq(sessions.id, token));
     return null;
   }
+  return row;
+}
 
-  await _db.update(users).set({ lastActiveAt: new Date().toISOString() }).where(eq(users.id, row.user.id));
-
-  if (row.user.role !== "admin") {
-    const validTier = await enforceSubscription(row.user.id, row.user.tier);
-    row.user.tier = validTier;
+export async function getSessionUser(req?: Request): Promise<User | null> {
+  // Check Authorization header first (for mobile/desktop apps)
+  if (req) {
+    const auth = req.headers.get("authorization");
+    if (auth?.startsWith("Bearer ")) {
+      const token = auth.slice(7);
+      const row = await getSessionByToken(token);
+      if (!row) return null;
+      await updateSessionAndUser(row.user, row.sessionId);
+      return row.user;
+    }
   }
 
+  // Fallback to cookie (for browser)
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+
+  const row = await getSessionByToken(token);
+  if (!row) return null;
+  await updateSessionAndUser(row.user, row.sessionId);
   return row.user;
 }
 
-export async function requireUser(): Promise<User> {
-  const user = await getSessionUser();
+async function updateSessionAndUser(user: User, sessionId: string) {
+  const _db = getDb();
+  if (!_db) return;
+  await _db.update(users).set({ lastActiveAt: new Date().toISOString() }).where(eq(users.id, user.id));
+  if (user.role !== "admin") {
+    const validTier = await enforceSubscription(user.id, user.tier);
+    user.tier = validTier;
+  }
+}
+
+export async function requireUser(req?: Request): Promise<User> {
+  const user = await getSessionUser(req);
   if (!user) throw new Error("UNAUTHORIZED");
   if (user.isBlocked) throw new Error("BLOCKED");
   return user;
 }
 
-export async function requireAdmin() {
-  const user = await requireUser();
+export async function requireAdmin(req?: Request) {
+  const user = await requireUser(req);
   if (user.role !== "admin") throw new Error("FORBIDDEN");
   return user;
 }

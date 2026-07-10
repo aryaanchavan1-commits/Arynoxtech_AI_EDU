@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
+import { AppImage } from "@/components/AppImage";
 import { useSession } from "@/lib/client-session";
 
 interface Download {
@@ -101,12 +102,8 @@ export default function DownloadsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {downloads.map((d) => (
               <div key={d.id} className="glass rounded-xl overflow-hidden group">
-                <div className="aspect-video bg-zinc-800/50 flex items-center justify-center">
-                  {d.lectureThumbnail ? (
-                    <img src={d.lectureThumbnail} alt={d.lectureTitle || "Lecture"} className="w-full h-full object-cover" />
-                  ) : (
-                    <svg className="w-10 h-10 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  )}
+                <div className="relative aspect-video bg-zinc-800/50">
+                  <AppImage src={d.lectureThumbnail} alt={d.lectureTitle || "Lecture"} />
                 </div>
                 <div className="p-4">
                   <h3 className="text-white font-medium text-sm truncate">{d.lectureTitle || "Untitled Lecture"}</h3>

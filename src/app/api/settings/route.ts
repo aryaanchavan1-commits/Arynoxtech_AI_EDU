@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { appSettings } from "@/db/schema";
+import { json } from "@/lib/utils";
 
 export async function GET() {
   const _db = getDb();
-  if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+  if (!_db) return json({ error: "Database not configured" }, { status: 500 });
   const rows = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
   const s = rows[0] || {};
 
-  return NextResponse.json({
+  return json({
     appName: s.appName || "Arynox-EDU",
     primaryColor: s.primaryColor || "#7c3aed",
     logoUrl: s.logoUrl || "",
@@ -25,5 +26,5 @@ export async function GET() {
     hasAuth0: !!(s.auth0Domain && s.auth0ClientId),
     hasStripe: !!s.stripeSecretKey,
     hasRazorpay: !!(s.razorpayKeyId && s.razorpayKeySecret),
-  });
+  }, { ttl: 300, cors: true }); // cached 5 min, CORS-enabled
 }

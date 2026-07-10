@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 
@@ -10,6 +10,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Show OAuth errors from URL params (e.g. ?error=token_exchange_failed)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("error");
+    if (err) {
+      const messages: Record<string, string> = {
+        no_code: "No authorization code received from provider",
+        auth0_not_configured: "Auth0 is not configured. Contact admin.",
+        token_exchange_failed: "Failed to exchange authorization code. Check Auth0 callback URL configuration.",
+        userinfo_failed: "Failed to fetch user info from provider.",
+        database_error: "Database connection error.",
+      };
+      setError(messages[err] || `OAuth error: ${err}`);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
