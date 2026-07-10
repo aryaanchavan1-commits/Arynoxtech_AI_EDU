@@ -13,13 +13,24 @@ export async function POST(req: Request) {
     const { title } = await req.json();
     if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
-    const settings = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
-    const s = settings[0];
-    if (!s?.bunnyLibraryId || !s?.bunnyApiKey) {
-      return NextResponse.json({ error: "Bunny.net not configured. Go to Settings and add Library ID + API Key." }, { status: 400 });
+    let bunnyLibraryId = process.env.BUNNY_LIBRARY_ID || "";
+    let bunnyApiKey = process.env.BUNNY_API_KEY || "";
+    let bunnyCdnHostname = process.env.BUNNY_CDN_HOSTNAME || "";
+
+    // Fallback: try DB settings if env vars not set
+    if (!bunnyLibraryId || !bunnyApiKey) {
+      const settings = await _db.select().from(appSettings).where(eq(appSettings.id, "global")).limit(1);
+      const s = settings[0];
+      bunnyLibraryId = s?.bunnyLibraryId || bunnyLibraryId;
+      bunnyApiKey = s?.bunnyApiKey || bunnyApiKey;
+      bunnyCdnHostname = s?.bunnyCdnHostname || bunnyCdnHostname;
     }
 
-    const config = { libraryId: s.bunnyLibraryId, apiKey: s.bunnyApiKey, cdnHostname: s.bunnyCdnHostname };
+    if (!bunnyLibraryId || !bunnyApiKey) {
+      return NextResponse.json({ error: "Bunny.net not configured. Add BUNNY_LIBRARY_ID and BUNNY_API_KEY in .env or Admin Settings." }, { status: 400 });
+    }
+
+    const config = { libraryId: bunnyLibraryId, apiKey: bunnyApiKey, cdnHostname: bunnyCdnHostname };
     const result = await createBunnyVideo(config, title);
 
     if ("error" in result) {

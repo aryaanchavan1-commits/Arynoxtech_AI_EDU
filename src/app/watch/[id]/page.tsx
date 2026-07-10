@@ -416,7 +416,7 @@ export default function WatchPage() {
           🤖
         </button>
 
-        <AiTutorDrawer open={aiOpen} onClose={() => setAiOpen(false)} />
+        <AiTutorDrawer open={aiOpen} onClose={() => setAiOpen(false)} lectureId={params.id as string} lectureTitle={lecture?.title} />
 
         {related?.length > 0 && (
           <div className="mt-10">

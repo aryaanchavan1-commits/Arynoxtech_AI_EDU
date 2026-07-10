@@ -88,7 +88,7 @@ export function QuizPanel({ quizzes }: { quizzes: { id: string; question: string
   );
 }
 
-export function AiTutorDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AiTutorDrawer({ open, onClose, lectureId, lectureTitle }: { open: boolean; onClose: () => void; lectureId?: string; lectureTitle?: string }) {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -104,7 +104,7 @@ export function AiTutorDrawer({ open, onClose }: { open: boolean; onClose: () =>
       const res = await fetch("/api/ai/tutor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: userMsg, context: "" }),
+        body: JSON.stringify({ question: userMsg, lectureId, lectureTitle }),
       });
       const data = await res.json();
       setMessages((m) => [...m, { role: "assistant", content: data.content || data.error || "No response" }]);
