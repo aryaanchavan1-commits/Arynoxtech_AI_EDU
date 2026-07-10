@@ -223,6 +223,20 @@ async function main() {
       updated_at text NOT NULL DEFAULT (datetime('now'))
     )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS mp_user_module_idx ON module_progress(user_id, module_id)`,
+    `ALTER TABLE modules ADD COLUMN icon_emoji text DEFAULT '📚'`,
+    `ALTER TABLE modules ADD COLUMN estimated_minutes integer DEFAULT 0`,
+    `ALTER TABLE lectures ADD COLUMN roadmap_step_id text REFERENCES roadmap_milestones(id) ON DELETE SET NULL`,
+    `CREATE INDEX IF NOT EXISTS lectures_roadmap_idx ON lectures(roadmap_step_id)`,
+    `CREATE TABLE IF NOT EXISTS roadmap_milestones (
+      id text PRIMARY KEY, skill_id text NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+      title text NOT NULL, description text, icon_emoji text DEFAULT '🎯',
+      color text DEFAULT '#7c3aed', sort_order integer NOT NULL DEFAULT 0,
+      estimated_minutes integer DEFAULT 0, lectures_required integer NOT NULL DEFAULT 1,
+      points_reward integer DEFAULT 50, status text NOT NULL DEFAULT 'published',
+      created_at text NOT NULL DEFAULT (datetime('now')),
+      updated_at text NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE INDEX IF NOT EXISTS rm_skill_idx ON roadmap_milestones(skill_id)`,
   ];
 
   for (const sql of tables) {

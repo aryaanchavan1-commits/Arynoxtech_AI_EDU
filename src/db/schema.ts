@@ -54,6 +54,8 @@ export const modules = sqliteTable("modules", {
   slug: text("slug").notNull(),
   description: text("description"),
   thumbnailUrl: text("thumbnail_url"),
+  iconEmoji: text("icon_emoji").default("📚"),
+  estimatedMinutes: integer("estimated_minutes").default(0),
   sortOrder: integer("sort_order").notNull().default(0),
   status: text("status").notNull().default("published"),
   createdAt: text("created_at").notNull().default("(datetime('now'))"),
@@ -84,6 +86,7 @@ export const lectures = sqliteTable("lectures", {
   id: text("id").primaryKey(),
   skillId: text("skill_id").notNull().references(() => skills.id, { onDelete: "cascade" }),
   moduleId: text("module_id").references(() => modules.id, { onDelete: "set null" }),
+  roadmapStepId: text("roadmap_step_id").references(() => roadmapMilestones.id, { onDelete: "set null" }),
   subCategoryId: text("sub_category_id").references(() => subCategories.id, { onDelete: "set null" }),
   categoryId: text("category_id").references(() => categories.id, { onDelete: "set null" }),
   title: text("title").notNull(),
@@ -111,6 +114,7 @@ export const lectures = sqliteTable("lectures", {
 }, (t) => [
   index("lectures_skill_idx").on(t.skillId),
   index("lectures_module_idx").on(t.moduleId),
+  index("lectures_roadmap_idx").on(t.roadmapStepId),
   index("lectures_tier_idx").on(t.tierRequired),
 ]);
 
@@ -378,6 +382,22 @@ export const moduleProgress = sqliteTable("module_progress", {
   updatedAt: text("updated_at").notNull().default("(datetime('now'))"),
 }, (t) => [uniqueIndex("mp_user_module_idx").on(t.userId, t.moduleId)]);
 
+export const roadmapMilestones = sqliteTable("roadmap_milestones", {
+  id: text("id").primaryKey(),
+  skillId: text("skill_id").notNull().references(() => skills.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  iconEmoji: text("icon_emoji").default("🎯"),
+  color: text("color").default("#7c3aed"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  estimatedMinutes: integer("estimated_minutes").default(0),
+  lecturesRequired: integer("lectures_required").notNull().default(1),
+  pointsReward: integer("points_reward").default(50),
+  status: text("status").notNull().default("published"),
+  createdAt: text("created_at").notNull().default("(datetime('now'))"),
+  updatedAt: text("updated_at").notNull().default("(datetime('now'))"),
+}, (t) => [index("rm_skill_idx").on(t.skillId)]);
+
 export const parentReports = sqliteTable("parent_reports", {
   id: text("id").primaryKey(),
   parentId: text("parent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -391,9 +411,9 @@ export const parentReports = sqliteTable("parent_reports", {
 export const usersRelations = relations(users, ({ many }) => ({
   progress: many(progress), watchlist: many(watchlist), notes: many(notes), subscriptions: many(subscriptions), payments: many(payments),
 }));
-export const skillsRelations = relations(skills, ({ many }) => ({ modules: many(modules), lectures: many(lectures) }));
+export const skillsRelations = relations(skills, ({ many }) => ({ modules: many(modules), lectures: many(lectures), roadmapMilestones: many(roadmapMilestones) }));
 export const modulesRelations = relations(modules, ({ one, many }) => ({ skill: one(skills, { fields: [modules.skillId], references: [skills.id] }), subCategories: many(subCategories), lectures: many(lectures) }));
-export const lecturesRelations = relations(lectures, ({ one, many }) => ({ skill: one(skills, { fields: [lectures.skillId], references: [skills.id] }), module: one(modules, { fields: [lectures.moduleId], references: [modules.id] }), flashcards: many(flashcards), quizzes: many(quizzes) }));
+export const lecturesRelations = relations(lectures, ({ one, many }) => ({ skill: one(skills, { fields: [lectures.skillId], references: [skills.id] }), module: one(modules, { fields: [lectures.moduleId], references: [modules.id] }), roadmapStep: one(roadmapMilestones, { fields: [lectures.roadmapStepId], references: [roadmapMilestones.id] }), flashcards: many(flashcards), quizzes: many(quizzes) }));
 
 export type User = typeof users.$inferSelect;
 export type Skill = typeof skills.$inferSelect;
@@ -408,4 +428,5 @@ export type AppSettings = typeof appSettings.$inferSelect;
 export type LiveClass = typeof liveClasses.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type Achievement = typeof achievements.$inferSelect;
+export type RoadmapMilestone = typeof roadmapMilestones.$inferSelect;
 export type SubscriptionTier = "free_trial" | "basic" | "plus" | "premium";
