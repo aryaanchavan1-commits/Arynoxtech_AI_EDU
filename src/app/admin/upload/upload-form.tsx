@@ -83,8 +83,21 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
 
       setUploadProgress(85);
 
-      // Save lecture metadata
-      await new Promise((r) => setTimeout(r, 1000));
+      // Wait for Bunny to start processing (poll status)
+      let statusChecked = false;
+      for (let i = 0; i < 6; i++) {
+        try {
+          const statusRes = await fetch(`/api/admin/bunny/status?v=${createData.videoId}`);
+          const statusData = await statusRes.json();
+          if (statusData.status === "processing" || statusData.status === "finished" || statusData.enabled) {
+            statusChecked = true;
+            break;
+          }
+        } catch {}
+        await new Promise((r) => setTimeout(r, 2000));
+        setUploadProgress(85 + i * 2);
+      }
+
       setUploadProgress(95);
       const saveRes = await fetch("/api/admin/content", {
         method: "POST",
