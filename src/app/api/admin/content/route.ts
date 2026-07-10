@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getDb } from "@/db";
 import { lectures, skills, modules, appSettings } from "@/db/schema";
@@ -7,13 +7,36 @@ import { requireAdmin } from "@/lib/auth";
 import { detectVulgarContent } from "@/lib/ai";
 import { createBunnyVideo } from "@/lib/bunny";
 
+export async function GET(req: Request) {
+  try {
+    await requireAdmin();
+    const _db = getDb();
+    if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type");
+
+    if (type === "skills") {
+      const data = await _db
+        .select({ id: skills.id, title: skills.title, slug: skills.slug })
+        .from(skills)
+        .orderBy(skills.sortOrder);
+      return NextResponse.json(data);
+    }
+
+    return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Failed" }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const user = await requireAdmin();
     const _db = getDb();
     if (!_db) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
     const body = await req.json();
-    const { type, title, description, skillId, moduleId, tierRequired, mp4Url, uploadBunny, eNotes } = body;
+    const { type, title, description, skillId, moduleId, roadmapStepId, tierRequired, mp4Url, uploadBunny, eNotes } = body;
     let bunnyVideoId: string | null = body.bunnyVideoId || null;
 
     const id = nanoid();
@@ -73,6 +96,7 @@ export async function POST(req: Request) {
     await _db.insert(lectures).values({
       id, title, slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + id.slice(0, 4),
       description: description || "", skillId, moduleId: moduleId || null,
+      roadmapStepId: roadmapStepId || null,
       tierRequired: tierRequired || "free_trial", status: "published",
       mp4Url: mp4Url || null, hlsUrl, bunnyVideoId: bunnyVideoId || null,
       thumbnailUrl: thumbnailUrl || body.thumbnailUrl || null,

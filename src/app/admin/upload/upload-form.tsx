@@ -2,11 +2,12 @@
 
 import { useState, useRef } from "react";
 
-export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] }) {
+export function UploadForm({ skills, modules, milestones }: { skills: any[]; modules: any[]; milestones?: any[] }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [skillId, setSkillId] = useState(skills[0]?.id || "");
   const [moduleId, setModuleId] = useState("");
+  const [roadmapStepId, setRoadmapStepId] = useState("");
   const [tierRequired, setTierRequired] = useState("free_trial");
   const [mode, setMode] = useState<"url" | "bunny">("url");
   const [mp4Url, setMp4Url] = useState("");
@@ -19,6 +20,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filteredModules = modules.filter((m: any) => m.skillId === skillId);
+  const filteredMilestones = (milestones || []).filter((m: any) => m.skillId === skillId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +33,12 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
         const res = await fetch("/api/admin/content", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, description, skillId, moduleId: moduleId || null, tierRequired, mp4Url, eNotes, thumbnailUrl }),
+          body: JSON.stringify({ title, description, skillId, moduleId: moduleId || null, roadmapStepId: roadmapStepId || null, tierRequired, mp4Url, eNotes, thumbnailUrl }),
         });
         const data = await res.json();
         if (res.ok) {
           setMessage("Lecture created successfully!");
-          setTitle(""); setDescription(""); setMp4Url(""); setFile(null); setThumbnailUrl("");
+          setTitle(""); setDescription(""); setMp4Url(""); setFile(null); setThumbnailUrl(""); setRoadmapStepId("");
         } else {
           setMessage(data.error || "Upload failed");
         }
@@ -101,7 +103,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, description, skillId, moduleId: moduleId || null, tierRequired,
+          title, description, skillId, moduleId: moduleId || null, roadmapStepId: roadmapStepId || null, tierRequired,
           uploadBunny: true, bunnyVideoId: createData.videoId, eNotes, thumbnailUrl,
         }),
       });
@@ -114,7 +116,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
 
       setUploadProgress(100);
       setMessage("Lecture created and video uploaded successfully!");
-      setTitle(""); setDescription(""); setMp4Url(""); setFile(null); setThumbnailUrl("");
+      setTitle(""); setDescription(""); setMp4Url(""); setFile(null); setThumbnailUrl(""); setRoadmapStepId("");
       if (fileRef.current) fileRef.current.value = "";
     } catch (err: any) {
       setMessage(err.message);
@@ -135,7 +137,7 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-xs text-zinc-400 mb-1 block">Skill</label>
-          <select value={skillId} onChange={(e) => { setSkillId(e.target.value); setModuleId(""); }} className="input-field">
+          <select value={skillId} onChange={(e) => { setSkillId(e.target.value); setModuleId(""); setRoadmapStepId(""); }} className="input-field">
             {skills.map((s: any) => <option key={s.id} value={s.id}>{s.title}</option>)}
           </select>
         </div>
@@ -144,6 +146,15 @@ export function UploadForm({ skills, modules }: { skills: any[]; modules: any[] 
           <select value={moduleId} onChange={(e) => setModuleId(e.target.value)} className="input-field">
             <option value="">No module</option>
             {filteredModules.map((m: any) => <option key={m.id} value={m.id}>{m.title}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-zinc-400 mb-1 block">🗺️ Roadmap Step</label>
+          <select value={roadmapStepId} onChange={(e) => setRoadmapStepId(e.target.value)} className="input-field">
+            <option value="">No step</option>
+            {filteredMilestones.map((m: any) => (
+              <option key={m.id} value={m.id}>{m.iconEmoji || "🎯"} {m.title}</option>
+            ))}
           </select>
         </div>
       </div>

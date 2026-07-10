@@ -18,7 +18,7 @@ export default async function AdminUploadPage() {
   return (
     <AdminShell>
       <h1 className="text-2xl font-bold text-white mb-6">Upload Content</h1>
-      <UploadForm skills={content.skills} modules={content.modules} />
+      <UploadForm skills={content.skills} modules={content.modules} milestones={content.milestones} />
     </AdminShell>
   );
 }

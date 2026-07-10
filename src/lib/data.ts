@@ -2,7 +2,7 @@ import { getDb } from "@/db";
 import { and, asc, desc, eq, like, or, sql } from "drizzle-orm";
 import {
   flashcards, lectures, modules, notes, progress, quizzes, skills, subCategories,
-  subscriptions, users, watchlist, liveClasses, categories,
+  subscriptions, users, watchlist, liveClasses, categories, roadmapMilestones,
   type Lecture, type User,
 } from "@/db/schema";
 import { ensureDb } from "@/db";
@@ -121,13 +121,14 @@ export async function getAdminUsers() {
 export async function getAdminContent() {
   await bootstrap();
   const _db = getDb();
-  if (!_db) return { skills: [], modules: [], subCategories: [], lectures: [], categories: [] };
+  if (!_db) return { skills: [], modules: [], subCategories: [], lectures: [], categories: [], milestones: [] };
   return {
     skills: await _db.select().from(skills).orderBy(asc(skills.sortOrder)),
     modules: await _db.select().from(modules).orderBy(asc(modules.sortOrder)),
     subCategories: await _db.select().from(subCategories).orderBy(asc(subCategories.sortOrder)),
     lectures: await _db.select().from(lectures).orderBy(desc(lectures.createdAt)),
     categories: await _db.select().from(categories).orderBy(asc(categories.sortOrder)),
+    milestones: await _db.select().from(roadmapMilestones).orderBy(asc(roadmapMilestones.sortOrder)),
   };
 }
 
